@@ -251,16 +251,24 @@ export default function Home() {
       setSyncStatus('syncing');
       try {
         const liveMatchRef = doc(db, 'live_matches', user.uid);
+
+        // IMPORTANT: Firestore DOES NOT allow 'undefined' values.
+        // We must sanitize the match object by converting it to JSON and back to strip 'undefined' fields.
+        const sanitizedMatch = JSON.parse(JSON.stringify(match));
+
         await setDoc(liveMatchRef, {
-          ...match,
+          ...sanitizedMatch,
           currentDate,
           currentTime,
           userId: user.uid,
           updatedAt: serverTimestamp()
         });
         setSyncStatus('synced');
-      } catch (err) {
-        console.error('Failed to sync live match:', err);
+      } catch (err: any) {
+        console.error('❌ LIVE SYNC ERROR:', err);
+        if (err.message?.includes('permission-denied')) {
+          console.error('🛑 ACTION REQUIRED: Your Firebase Rules are blocking the write. Please set them to "Test Mode" in the Firebase Console.');
+        }
         setSyncStatus('failed');
       }
     };
@@ -856,7 +864,10 @@ export default function Home() {
               <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold">✓ Live Synced</span>
             )}
             {syncStatus === 'failed' && (
-              <span className="bg-red-500/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ Sync Failed</span>
+              <div className="flex flex-col items-end gap-1">
+                <span className="bg-red-500/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ Sync Failed</span>
+                <p className="text-[8px] text-red-500/80 font-black tracking-tighter uppercase">Check Firebase Rules!</p>
+              </div>
             )}
           </div>
           <Scoreboard
