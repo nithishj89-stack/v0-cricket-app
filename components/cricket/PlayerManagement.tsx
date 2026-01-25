@@ -102,10 +102,15 @@ export default function PlayerManagement({ teamA, teamB, currentOvers, onStart }
               Welcome to the <br />Cricket World
             </h1>
             <div className="flex flex-col items-center gap-2">
-              <h2 className="text-xl font-bold text-muted-foreground/80 tracking-wide uppercase italic">NJ.cric-scorer v2.0</h2>
-              <div className="w-12 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full" />
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto font-medium">
-                Experience professional-grade live match scoring, custom squad management, and real-time broadcasting.
+              <div className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full mb-1">
+                <span className="text-[10px] font-black text-primary tracking-[0.2em] uppercase">The Ultimate Scoring Suite</span>
+              </div>
+              <h2 className="text-xl md:text-2xl font-black text-foreground tracking-tight uppercase">
+                Score Like a Pro. <span className="text-secondary text-glow">Broadcast Like a Legend.</span>
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full mt-1" />
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto font-medium leading-relaxed opacity-80">
+                Experience professional-grade live match tracking, custom squad management, and instant real-time sharing.
               </p>
             </div>
           </div>

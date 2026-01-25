@@ -60,8 +60,12 @@ export interface MatchData {
 export async function saveMatch(userId: string, matchData: MatchData): Promise<string> {
     try {
         const matchesRef = collection(db, 'matches');
+
+        // Remove undefined values to satisfy Firestore
+        const sanitizedMatchData = JSON.parse(JSON.stringify(matchData));
+
         const docRef = await addDoc(matchesRef, {
-            ...matchData,
+            ...sanitizedMatchData,
             userId: userId,
             createdAt: Timestamp.now()
         });
