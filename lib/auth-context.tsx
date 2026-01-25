@@ -39,20 +39,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         const userDoc = await getDoc(userDocRef);
 
                         if (!userDoc.exists()) {
+                            console.log('🔄 Creating new user record in Firestore for:', user.email);
                             await setDoc(userDocRef, {
                                 uid: user.uid,
                                 email: user.email,
-                                displayName: user.displayName,
+                                displayName: user.displayName || 'Scorer',
+                                photoURL: user.photoURL || null,
                                 createdAt: serverTimestamp(),
-                                lastLogin: serverTimestamp()
+                                lastLogin: serverTimestamp(),
+                                status: 'active',
+                                role: 'scorer',
+                                provider: user.providerData[0]?.providerId || 'password'
                             });
+                            console.log('✅ User record created successfully');
                         } else {
+                            console.log('🔄 Updating last login for:', user.email);
                             await setDoc(userDocRef, {
-                                lastLogin: serverTimestamp()
+                                lastLogin: serverTimestamp(),
+                                displayName: user.displayName || userDoc.data().displayName, // Sync display name if changed
+                                photoURL: user.photoURL || userDoc.data().photoURL
                             }, { merge: true });
+                            console.log('✅ Last login updated');
                         }
                     } catch (err) {
-                        console.error('Failed to sync user doc:', err);
+                        console.error('❌ Failed to sync user doc to Firestore:', err);
+                        console.error('Tip: Make sure your Firestore Security Rules are published.');
                     }
                 };
                 syncUserDoc();
@@ -70,16 +81,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const result = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(result.user, { displayName });
 
-        // Background sync if possible, but don't block the UI
-        setDoc(doc(db, 'users', result.user.uid), {
+        // Explicitly create user document and wait for it
+        // This ensures the record exists in the 'users' collection immediately after signup
+        await setDoc(doc(db, 'users', result.user.uid), {
             uid: result.user.uid,
             email: result.user.email,
             displayName: displayName,
-            photoURL: result.user.photoURL,
+            photoURL: result.user.photoURL || null,
             createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp()
-        }).catch(err => {
-            console.error('Initial user doc creation failed:', err);
+            lastLogin: serverTimestamp(),
+            status: 'active',
+            role: 'scorer'
         });
     };
 
