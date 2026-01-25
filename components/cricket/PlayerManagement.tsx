@@ -21,10 +21,11 @@ interface Team {
 interface PlayerManagementProps {
   teamA: Team;
   teamB: Team;
-  onStart: (teamA: Team, teamB: Team, tournamentId?: string) => void;
+  currentOvers: number;
+  onStart: (teamA: Team, teamB: Team, overs: number, tournamentId?: string) => void;
 }
 
-export default function PlayerManagement({ teamA, teamB, onStart }: PlayerManagementProps) {
+export default function PlayerManagement({ teamA, teamB, currentOvers, onStart }: PlayerManagementProps) {
   const { user } = useAuth();
   const [editingTeam, setEditingTeam] = useState<'A' | 'B' | null>(null);
   const [localTeamA, setLocalTeamA] = useState<Team>(teamA);
@@ -37,6 +38,8 @@ export default function PlayerManagement({ teamA, teamB, onStart }: PlayerManage
   // Tournament State
   const [availableTournaments, setAvailableTournaments] = useState<any[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string | undefined>(undefined);
+  const [localOvers, setLocalOvers] = useState(currentOvers);
+
 
   useEffect(() => {
     if (user) {
@@ -75,12 +78,7 @@ export default function PlayerManagement({ teamA, teamB, onStart }: PlayerManage
     if (editingTeam) {
       setEditingTeam(null);
     } else {
-      // Pass tournamentId if needed back to Home or handle it here
-      // Since onStart only takes teamA and teamB, I'll need to handle tournament ID state in Home.
-      // Wait, I already added tournamentId to MatchState in app/page.tsx.
-      // I should update onStart signature or set it via another prop.
-      // For now, I'll just call onStart and maybe I should have updated onStart.
-      onStart(localTeamA, localTeamB, selectedTournament);
+      onStart(localTeamA, localTeamB, localOvers, selectedTournament);
     }
   };
 
@@ -228,20 +226,49 @@ export default function PlayerManagement({ teamA, teamB, onStart }: PlayerManage
             </div>
           )}
 
-          {/* Tournament Selection */}
-          {!isEditing && !showSavedTeams && availableTournaments.length > 0 && (
-            <div className="pt-4 border-t border-border">
-              <label className="text-xs font-bold text-muted-foreground mb-2 block uppercase tracking-wider">Select Tournament (Optional)</label>
-              <select
-                className="w-full bg-background border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
-                value={selectedTournament || ""}
-                onChange={(e) => setSelectedTournament(e.target.value || undefined)}
-              >
-                <option value="">Friendly Match (No Tournament)</option>
-                {availableTournaments.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+          {/* Overs Selection */}
+          {!isEditing && !showSavedTeams && (
+            <div className="pt-4 border-t border-border space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Match Overs (2-100)</label>
+                  <span className="text-lg font-black text-primary">{localOvers} <span className="text-[10px] text-muted-foreground ml-1">OVERS</span></span>
+                </div>
+                <div className="flex gap-4 items-center">
+                  <input
+                    type="range"
+                    min="2"
+                    max="100"
+                    value={localOvers}
+                    onChange={(e) => setLocalOvers(parseInt(e.target.value))}
+                    className="flex-1 accent-primary h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min="2"
+                    max="100"
+                    value={localOvers}
+                    onChange={(e) => setLocalOvers(Math.max(2, Math.min(100, parseInt(e.target.value) || 2)))}
+                    className="w-16 bg-muted/30 border border-border rounded px-2 py-1 text-sm font-bold text-center"
+                  />
+                </div>
+              </div>
+
+              {availableTournaments.length > 0 && (
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground mb-2 block uppercase tracking-wider">Select Tournament (Optional)</label>
+                  <select
+                    className="w-full bg-background border border-border rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all font-medium"
+                    value={selectedTournament || ""}
+                    onChange={(e) => setSelectedTournament(e.target.value || undefined)}
+                  >
+                    <option value="">Friendly Match (No Tournament)</option>
+                    {availableTournaments.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 

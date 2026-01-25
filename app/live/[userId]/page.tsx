@@ -102,14 +102,18 @@ export default function LivePage() {
         <main className="min-h-screen bg-background py-6 px-4">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header Info */}
-                <div className="bg-card rounded-lg p-6 border border-border">
-                    <div className="flex justify-between items-center mb-4">
-                        <h1 className="text-4xl font-bold text-primary">NJ.cric-scorer</h1>
-                        <div className="text-right">
-                            <p className="text-sm text-muted-foreground">{match.currentDate}</p>
-                            <p className="text-lg font-semibold text-primary">{match.currentTime}</p>
-                            <p className={`text-sm mt-1 font-bold ${match.isMatchEnded ? 'text-destructive' : 'text-primary'}`}>
-                                {match.isMatchEnded ? '✓ FINISHED' : '🟢 LIVE'}
+                <div className="bg-card rounded-xl p-6 border border-border flex justify-between items-center">
+                    <h1 className="text-3xl font-black text-primary tracking-tighter">NJ.cric-scorer</h1>
+                    <div className="glass-clock px-4 py-2 rounded-2xl flex items-center gap-4 float-animation border border-primary/20">
+                        <div className="flex flex-col text-right">
+                            <span className="text-[10px] font-black text-primary/60 uppercase tracking-tighter">Live Session Time</span>
+                            <span className="text-xl font-black text-primary digital-number text-glow leading-none">{match.currentTime}</span>
+                        </div>
+                        <div className="w-px h-8 bg-border/50" />
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter italic">{match.currentDate}</span>
+                            <p className={`text-[10px] font-black mt-0.5 ${match.isMatchEnded ? 'text-destructive' : 'text-primary'}`}>
+                                {match.isMatchEnded ? '✓ FINISHED' : '🟢 LIVE NOW'}
                             </p>
                         </div>
                     </div>
