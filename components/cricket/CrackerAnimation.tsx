@@ -66,19 +66,7 @@ export default function CrackerAnimation({ trigger, onComplete }: CrackerAnimati
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {/* Burst flash effects */}
-      {bursts.map(burst => (
-        <div
-          key={`burst-${burst.id}`}
-          className="absolute burst-flash"
-          style={{
-            left: `${burst.x}%`,
-            top: `${burst.y}%`,
-          }}
-        >
-          <div className="w-32 h-32 rounded-full bg-primary/50 blur-xl" />
-        </div>
-      ))}
+      {/* Burst flash effects - removed fog effect */}
 
       {/* Particles */}
       {particles.map(particle => (
@@ -106,7 +94,7 @@ export default function CrackerAnimation({ trigger, onComplete }: CrackerAnimati
           )}
           {particle.type === 'star' && (
             <svg width={particle.size * 2} height={particle.size * 2} viewBox="0 0 24 24">
-              <path 
+              <path
                 d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
                 fill={particle.color}
                 style={{ filter: `drop-shadow(0 0 ${particle.size}px ${particle.color})` }}
@@ -141,9 +129,9 @@ export default function CrackerAnimation({ trigger, onComplete }: CrackerAnimati
             '--sway': `${(Math.random() - 0.5) * 100}px`,
           } as React.CSSProperties}
         >
-          <div 
+          <div
             className="w-2 h-6 rounded-sm"
-            style={{ 
+            style={{
               backgroundColor: ['#00d84f', '#ffd700', '#ff3b30', '#ffffff'][Math.floor(Math.random() * 4)],
               transform: `rotate(${Math.random() * 360}deg)`
             }}

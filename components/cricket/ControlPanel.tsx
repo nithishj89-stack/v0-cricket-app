@@ -9,6 +9,8 @@ interface ControlPanelProps {
   onChangeStrike: () => void;
   onNewOver: () => void;
   onResetMatch: () => void;
+  onUndo: () => void;
+  canUndo: boolean;
   isMatchEnded: boolean;
 }
 
@@ -18,6 +20,8 @@ export default function ControlPanel({
   onChangeStrike,
   onNewOver,
   onResetMatch,
+  onUndo,
+  canUndo,
   isMatchEnded
 }: ControlPanelProps) {
   const [lastAction, setLastAction] = useState('');
@@ -58,7 +62,20 @@ export default function ControlPanel({
     <div className="space-y-4">
       {/* Score Buttons */}
       <div className="bg-card rounded-lg p-6 border border-border">
-        <h2 className="text-xl font-bold text-primary mb-4">Scoring</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-primary">Scoring</h2>
+          <Button
+            onClick={onUndo}
+            disabled={!canUndo || isMatchEnded}
+            variant="outline"
+            className="border-yellow-600/50 text-yellow-500 hover:bg-yellow-600/10 h-8 text-xs font-bold"
+          >
+            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+            UNDO LAST BALL
+          </Button>
+        </div>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
           {scoreButtons.map((btn) => (
             <Button
@@ -66,11 +83,11 @@ export default function ControlPanel({
               onClick={() => handleScoreClick(btn.value, false, btn.isBoundary)}
               disabled={isMatchEnded}
               className={`
-                ${btn.value === 4 || btn.value === 6 
-                  ? 'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-lg hover:shadow-secondary/50' 
+                ${btn.value === 4 || btn.value === 6
+                  ? 'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-lg hover:shadow-secondary/50'
                   : 'bg-primary text-primary-foreground hover:bg-primary/90'}
                 font-bold text-lg py-6 transition-all
-                ${animatingButton === `score-${btn.value}` 
+                ${animatingButton === `score-${btn.value}`
                   ? btn.value === 6 ? 'six-animation' : btn.value === 4 ? 'four-animation' : 'score-popup'
                   : ''
                 }

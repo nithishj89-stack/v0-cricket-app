@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/cricket/Header';
 import Scoreboard from '@/components/cricket/Scoreboard';
 import BatsmenSection from '@/components/cricket/BatsmenSection';
@@ -14,7 +14,13 @@ import BowlerSelectionModal from '@/components/cricket/BowlerSelectionModal';
 import MatchResults from '@/components/cricket/MatchResults';
 import WicketAnimation from '@/components/cricket/WicketAnimation';
 import BoundaryAnimation from '@/components/cricket/BoundaryAnimation';
+import UserHeader from '@/components/UserHeader';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/auth-context';
+import { saveMatch } from '@/lib/match-service';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+
 
 interface Player {
   id: number;
@@ -87,9 +93,13 @@ interface MatchState {
   wicketAnimation: boolean;
   winner: string | null;
   manOfMatch: string | null;
+  tournamentId?: string;
 }
 
 export default function Home() {
+  const { user } = useAuth();
+  const [matchSaved, setMatchSaved] = useState(false);
+
   const defaultTeamA: Team = {
     name: 'Team A',
     players: [
@@ -153,8 +163,71 @@ export default function Home() {
     duckOutPlayer: null,
     wicketAnimation: false,
     winner: null,
-    manOfMatch: null
+    manOfMatch: null,
+    tournamentId: undefined
   });
+
+  const [lastMatchState, setLastMatchState] = useState<MatchState | null>(null);
+
+  const saveHistory = useCallback(() => {
+    setLastMatchState(JSON.parse(JSON.stringify(match)));
+  }, [match]);
+
+  const handleUndo = () => {
+    if (lastMatchState) {
+      setMatch(lastMatchState);
+      setLastMatchState(null);
+    }
+  };
+
+
+  // Format balls to overs string
+  const formatOvers = (balls: number): string => {
+    const overs = Math.floor(balls / 6);
+    const remainingBalls = balls % 6;
+    return `${overs}.${remainingBalls}`;
+  };
+
+  // Save match to Firestore when match ends
+  useEffect(() => {
+    const saveMatchToFirestore = async () => {
+      if (match.isMatchEnded && user && !matchSaved && match.inning1 && match.inning2) {
+        try {
+          const matchId = await saveMatch(user.uid, {
+            date: match.currentDate,
+            time: match.currentTime,
+            teamAName: match.teamA.name,
+            teamBName: match.teamB.name,
+            teamAScore: match.inning1.score,
+            teamAWickets: match.inning1.wickets,
+            teamAOvers: formatOvers(match.inning1.balls),
+            teamBScore: match.inning2.score,
+            teamBWickets: match.inning2.wickets,
+            teamBOvers: formatOvers(match.inning2.balls),
+            winner: match.winner || '',
+            manOfMatch: match.manOfMatch || '',
+            totalOvers: match.totalOvers,
+            tournamentId: match.tournamentId,
+            batsmenA: match.inning1.batsmen,
+            batsmenB: match.inning2.batsmen,
+            bowlersA: match.inning2.bowlers,
+            bowlersB: match.inning1.bowlers
+          });
+
+          if (match.tournamentId) {
+            const { addMatchToTournament } = await import('@/lib/tournament-service');
+            await addMatchToTournament(match.tournamentId, matchId);
+          }
+          setMatchSaved(true);
+          console.log('Match saved successfully!');
+        } catch (error) {
+          console.error('Failed to save match:', error);
+        }
+      }
+    };
+
+    saveMatchToFirestore();
+  }, [match.isMatchEnded, user, matchSaved, match]);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -171,7 +244,42 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleStartMatch = (teamA: Team, teamB: Team) => {
+  // Sync Live Match to Firestore
+  useEffect(() => {
+    if (!match.matchStarted || match.isMatchEnded || !user) return;
+
+    const syncLiveMatch = async () => {
+      try {
+        const liveMatchRef = doc(db, 'live_matches', user.uid);
+        await setDoc(liveMatchRef, {
+          ...match,
+          userId: user.uid,
+          updatedAt: serverTimestamp()
+        });
+      } catch (err) {
+        console.error('Failed to sync live match:', err);
+      }
+    };
+
+    const timeout = setTimeout(syncLiveMatch, 2000); // 2s throttle
+    return () => clearTimeout(timeout);
+  }, [match, user]);
+
+  // Cleanup Live Match on End
+  useEffect(() => {
+    if (match.isMatchEnded && user) {
+      const cleanup = async () => {
+        try {
+          await deleteDoc(doc(db, 'live_matches', user.uid));
+        } catch (err) {
+          console.error('Cleanup failed:', err);
+        }
+      };
+      cleanup();
+    }
+  }, [match.isMatchEnded, user]);
+
+  const handleStartMatch = (teamA: Team, teamB: Team, tournamentId?: string) => {
     // Initialize all batsmen for both teams
     const allBatsmenA = teamA.players.map((p, idx) => ({
       id: p.id,
@@ -232,9 +340,9 @@ export default function Home() {
       currentBatsmenIndices: [0, 1],
       currentBowlerIndex: 0,
       currentInning: 1,
-      runs: 0,
       wickets: 0,
-      balls: 0
+      balls: 0,
+      tournamentId
     }));
   };
 
@@ -250,15 +358,15 @@ export default function Home() {
 
   const handleScoreUpdate = (runsByBall: number, isExtra: boolean = false, isBoundary: boolean = false) => {
     if (match.isMatchEnded || !match.matchStarted) return;
-
+    saveHistory();
     setMatch(prev => {
       const newMatch = { ...prev };
       const allBatsmen = newMatch.currentTeam === 'A' ? [...newMatch.allBatsmenA] : [...newMatch.allBatsmenB];
       const bowlers = newMatch.currentTeam === 'A' ? [...newMatch.allBowlersB] : [...newMatch.allBowlersA];
-      
+
       const strikerIdx = newMatch.currentBatsmenIndices.find(idx => allBatsmen[idx]?.isStriker);
       const nonStrikerIdx = newMatch.currentBatsmenIndices.find(idx => !allBatsmen[idx]?.isStriker);
-      
+
       if (strikerIdx === undefined) return prev;
 
       const striker = allBatsmen[strikerIdx];
@@ -277,7 +385,7 @@ export default function Home() {
         // Legal delivery
         striker.runs += runsByBall;
         striker.balls += 1;
-        
+
         if (isBoundary) {
           if (runsByBall === 4) {
             striker.fours += 1;
@@ -304,13 +412,13 @@ export default function Home() {
         if (currentBowler.balls === 6) {
           currentBowler.overs += 1;
           currentBowler.balls = 0;
-          
+
           // Change strike at end of over
           if (nonStriker) {
             striker.isStriker = false;
             nonStriker.isStriker = true;
           }
-          
+
           // Show bowler selection for next over
           newMatch.showBowlerSelection = true;
         }
@@ -348,7 +456,7 @@ export default function Home() {
         newMatch.currentBatsmenIndices = [0, 1];
         newMatch.currentBowlerIndex = 0;
         newMatch.showBowlerSelection = true;
-        
+
         // Reset second inning batsmen
         newMatch.allBatsmenB = newMatch.allBatsmenB.map((b, idx) => ({
           ...b,
@@ -359,7 +467,7 @@ export default function Home() {
           isStriker: idx === 0,
           isOut: false
         }));
-        
+
         // Reset Team A bowlers for second innings
         newMatch.allBowlersA = newMatch.allBowlersA.map(b => ({
           ...b,
@@ -422,14 +530,14 @@ export default function Home() {
   const handleWicket = () => {
     if (match.isMatchEnded || !match.matchStarted) return;
     if (match.wickets >= 10) return;
-
+    saveHistory();
     setMatch(prev => {
       const newMatch = { ...prev };
       const allBatsmen = newMatch.currentTeam === 'A' ? [...newMatch.allBatsmenA] : [...newMatch.allBatsmenB];
       const bowlers = newMatch.currentTeam === 'A' ? [...newMatch.allBowlersB] : [...newMatch.allBowlersA];
-      
+
       const strikerIdx = newMatch.currentBatsmenIndices.find(idx => allBatsmen[idx]?.isStriker);
-      
+
       if (strikerIdx === undefined) return prev;
 
       const striker = allBatsmen[strikerIdx];
@@ -445,7 +553,7 @@ export default function Home() {
       striker.isStriker = false;
       newMatch.wickets += 1;
       newMatch.wicketAnimation = true;
-      
+
       if (currentBowler) {
         currentBowler.wickets += 1;
       }
@@ -465,14 +573,14 @@ export default function Home() {
       }
 
       // Find next batsman who hasn't batted yet
-      const nextBatsmanIdx = allBatsmen.findIndex((b, idx) => 
+      const nextBatsmanIdx = allBatsmen.findIndex((b, idx) =>
         !b.isOut && !newMatch.currentBatsmenIndices.includes(idx)
       );
 
       if (nextBatsmanIdx !== -1) {
         // Bring in new batsman as striker
         allBatsmen[nextBatsmanIdx].isStriker = true;
-        
+
         // Replace the out batsman in indices
         const outIdxPosition = newMatch.currentBatsmenIndices.indexOf(strikerIdx);
         newMatch.currentBatsmenIndices[outIdxPosition] = nextBatsmanIdx;
@@ -498,7 +606,7 @@ export default function Home() {
             batsmen: [...newMatch.allBatsmenA],
             bowlers: newMatch.allBowlersB.filter(b => b.overs > 0 || b.balls > 0)
           };
-          
+
           newMatch.target = newMatch.runs + 1;
           newMatch.currentInning = 2;
           newMatch.currentTeam = 'B';
@@ -508,7 +616,7 @@ export default function Home() {
           newMatch.currentBatsmenIndices = [0, 1];
           newMatch.currentBowlerIndex = 0;
           newMatch.showBowlerSelection = true;
-          
+
           newMatch.allBatsmenB = newMatch.allBatsmenB.map((b, idx) => ({
             ...b,
             runs: 0,
@@ -518,7 +626,7 @@ export default function Home() {
             isStriker: idx === 0,
             isOut: false
           }));
-          
+
           newMatch.allBowlersA = newMatch.allBowlersA.map(b => ({
             ...b,
             overs: 0,
@@ -548,10 +656,10 @@ export default function Home() {
   const handleBowlerSelect = (bowler: Player) => {
     setMatch(prev => {
       const bowlers = prev.currentTeam === 'A' ? prev.allBowlersB : prev.allBowlersA;
-      
+
       // Find existing bowler or create new entry
       let bowlerIdx = bowlers.findIndex(b => b.id === bowler.id);
-      
+
       if (bowlerIdx === -1) {
         // Add new bowler to the list
         const newBowler: Bowler = {
@@ -562,7 +670,7 @@ export default function Home() {
           runs: 0,
           wickets: 0
         };
-        
+
         if (prev.currentTeam === 'A') {
           return {
             ...prev,
@@ -589,6 +697,7 @@ export default function Home() {
   };
 
   const handleNewMatch = () => {
+    setMatchSaved(false); // Reset match saved state for new match
     setMatch(prev => ({
       ...prev,
       matchStarted: false,
@@ -613,9 +722,10 @@ export default function Home() {
   };
 
   const handleChangeStrike = () => {
+    saveHistory();
     setMatch(prev => {
       const allBatsmen = prev.currentTeam === 'A' ? [...prev.allBatsmenA] : [...prev.allBatsmenB];
-      
+
       prev.currentBatsmenIndices.forEach(idx => {
         if (allBatsmen[idx]) {
           allBatsmen[idx].isStriker = !allBatsmen[idx].isStriker;
@@ -633,6 +743,11 @@ export default function Home() {
   if (!match.matchStarted) {
     return (
       <main className="min-h-screen bg-background text-foreground py-6 px-4">
+        {/* User Header */}
+        <div className="max-w-7xl mx-auto mb-6 flex justify-end">
+          <UserHeader />
+        </div>
+
         {match.showPlayerManagement && (
           <PlayerManagement
             teamA={match.teamA}
@@ -649,25 +764,30 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background text-foreground py-6 px-4">
+      {/* User Header */}
+      <div className="max-w-7xl mx-auto mb-4 flex justify-end">
+        <UserHeader />
+      </div>
+
       {/* Cracker Animation for boundaries */}
       <CrackerAnimation
         trigger={match.crackerTrigger}
         onComplete={() => setMatch(prev => ({ ...prev, crackerTrigger: false }))}
       />
-      
+
       {/* Boundary Animation */}
       <BoundaryAnimation
         type={match.boundaryType}
         onComplete={() => setMatch(prev => ({ ...prev, boundaryType: null }))}
       />
-      
+
       {/* Duck Out Animation */}
       <DuckOutAnimation
         playerName={match.duckOutPlayer || ''}
         show={!!match.duckOutPlayer}
         onComplete={() => setMatch(prev => ({ ...prev, duckOutPlayer: null }))}
       />
-      
+
       {/* Wicket Animation */}
       <WicketAnimation
         show={match.wicketAnimation}
@@ -686,7 +806,7 @@ export default function Home() {
           teamBWickets={match.inning2.wickets}
           winner={match.winner || ''}
           winType={
-            match.winner === match.teamA.name 
+            match.winner === match.teamA.name
               ? `${match.teamA.name} won by ${match.inning1.score - match.inning2.score} runs`
               : `${match.teamB.name} won by ${10 - match.inning2.wickets} wickets`
           }
@@ -705,7 +825,7 @@ export default function Home() {
         show={match.showBowlerSelection}
         team={match.currentTeam === 'A' ? match.teamB.name : match.teamA.name}
         bowlers={match.currentTeam === 'A' ? match.teamB.players : match.teamA.players}
-        currentBowler={currentBowler}
+        currentBowler={currentBowler ? { ...currentBowler, role: 'Bowler' } : null}
         onSelect={handleBowlerSelect}
       />
 
@@ -729,14 +849,8 @@ export default function Home() {
         <Scoreboard
           match={{
             ...match,
-            teamAName: match.teamA.name,
-            teamBName: match.teamB.name,
-            teamALogo: '',
-            teamBLogo: '',
-            tossWinner: match.teamA.name,
-            decision: 'Batting',
-            matchType: 'T20',
-            chasingMode: match.currentInning === 2
+            chasingMode: match.currentInning === 2,
+            userId: user?.uid
           }}
           currentTeam={match.currentTeam === 'A' ? match.teamA.name : match.teamB.name}
           currentTeamLogo=""
@@ -746,13 +860,13 @@ export default function Home() {
         <div className="grid lg:grid-cols-2 gap-6">
           <BatsmenSection
             batsmen={currentBatsmen}
-            onBatsmanNameChange={() => {}}
+            onBatsmanNameChange={() => { }}
           />
 
           {currentBowler && (
             <BowlerSection
               bowler={currentBowler}
-              onBowlerNameChange={() => {}}
+              onBowlerNameChange={() => { }}
             />
           )}
         </div>
@@ -764,19 +878,14 @@ export default function Home() {
           onChangeStrike={handleChangeStrike}
           onNewOver={() => setMatch(prev => ({ ...prev, showBowlerSelection: true }))}
           onResetMatch={handleNewMatch}
+          onUndo={handleUndo}
+          canUndo={!!lastMatchState}
           isMatchEnded={match.isMatchEnded}
         />
 
         {/* Team Contributions */}
         <TeamContributions match={{
-          ...match,
-          teamAName: match.teamA.name,
-          teamBName: match.teamB.name,
-          teamALogo: '',
-          teamBLogo: '',
-          tossWinner: match.teamA.name,
-          decision: 'Batting',
-          matchType: 'T20'
+          ...match
         }} />
       </div>
     </main>

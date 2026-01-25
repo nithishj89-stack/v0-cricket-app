@@ -29,23 +29,18 @@ export default function BoundaryAnimation({ type, onComplete }: BoundaryAnimatio
 
   return (
     <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-40 overflow-hidden">
-      {/* Background flash */}
-      <div 
-        className={`absolute inset-0 ${isSix ? 'bg-primary/30' : 'bg-secondary/30'}`}
-        style={{ animation: 'flashBg 0.5s ease-out' }}
-      />
+      {/* Background flash - removed fog effect */}
 
       {/* Main text */}
       <div className={`relative z-10 text-center ${isSix ? 'six-text' : 'four-text'}`}>
-        <div 
-          className={`text-8xl font-black tracking-widest mb-4 ${
-            isSix ? 'text-primary' : 'text-secondary'
-          }`}
+        <div
+          className={`text-8xl font-black tracking-widest mb-4 ${isSix ? 'text-primary' : 'text-secondary'
+            }`}
           style={{ textShadow: `0 0 40px ${isSix ? '#00d84f' : '#ffd700'}` }}
         >
           {isSix ? 'SIX!' : 'FOUR!'}
         </div>
-        
+
         {/* Subtitle */}
         <div className="text-2xl text-foreground font-bold">
           {isSix ? 'OUT OF THE PARK!' : 'BOUNDARY!'}
@@ -74,7 +69,7 @@ export default function BoundaryAnimation({ type, onComplete }: BoundaryAnimatio
                 '--y': `${(Math.random() - 0.5) * 200}px`,
               } as React.CSSProperties}
             >
-              <div 
+              <div
                 className="w-2 h-2 rounded-full bg-primary"
                 style={{ boxShadow: '0 0 10px #00d84f' }}
               />
@@ -95,7 +90,7 @@ export default function BoundaryAnimation({ type, onComplete }: BoundaryAnimatio
                 '--distance': `${80 + Math.random() * 40}px`,
               } as React.CSSProperties}
             >
-              <div 
+              <div
                 className="w-3 h-3 rounded-full bg-secondary"
                 style={{ boxShadow: '0 0 8px #ffd700' }}
               />
