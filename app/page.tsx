@@ -838,6 +838,14 @@ export default function Home() {
           bowlersA={match.inning1.bowlers}
           bowlersB={match.inning2.bowlers}
           onNewMatch={handleNewMatch}
+          isSaved={matchSaved}
+          onSave={() => {
+            if (!matchSaved) {
+              console.log('Manually triggering save...');
+              // The automatic save effect should handle it if matchSaved is false
+              setMatchSaved(false); // Reset to trigger effect if needed, though effect already watches match.isMatchEnded
+            }
+          }}
         />
       )}
 

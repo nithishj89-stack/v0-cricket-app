@@ -37,6 +37,8 @@ interface MatchResultsProps {
   bowlersA: BowlerStats[];
   bowlersB: BowlerStats[];
   onNewMatch: () => void;
+  isSaved?: boolean;
+  onSave?: () => void;
 }
 
 export default function MatchResults({
@@ -55,7 +57,9 @@ export default function MatchResults({
   batsmenB,
   bowlersA,
   bowlersB,
-  onNewMatch
+  onNewMatch,
+  isSaved = false,
+  onSave
 }: MatchResultsProps) {
   if (!show) return null;
 
@@ -94,11 +98,10 @@ export default function MatchResults({
 
           {/* Final Scores */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-            <div className={`p-6 rounded-xl border-2 text-center transition-all ${
-              winner === teamAName 
-                ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20' 
-                : 'border-border bg-muted/20'
-            }`}>
+            <div className={`p-6 rounded-xl border-2 text-center transition-all ${winner === teamAName
+              ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+              : 'border-border bg-muted/20'
+              }`}>
               <div className="text-muted-foreground text-sm mb-2 uppercase tracking-wider">{teamAName}</div>
               <div className="text-5xl font-black text-foreground">{teamAScore}/{teamAWickets}</div>
               {winner === teamAName && (
@@ -114,11 +117,10 @@ export default function MatchResults({
               <div className="text-sm text-muted-foreground mt-2">Target: {target}</div>
             </div>
 
-            <div className={`p-6 rounded-xl border-2 text-center transition-all ${
-              winner === teamBName 
-                ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20' 
-                : 'border-border bg-muted/20'
-            }`}>
+            <div className={`p-6 rounded-xl border-2 text-center transition-all ${winner === teamBName
+              ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+              : 'border-border bg-muted/20'
+              }`}>
               <div className="text-muted-foreground text-sm mb-2 uppercase tracking-wider">{teamBName}</div>
               <div className="text-5xl font-black text-foreground">{teamBScore}/{teamBWickets}</div>
               {winner === teamBName && (
@@ -161,13 +163,12 @@ export default function MatchResults({
                   {battedA.length > 0 ? (
                     <div className="space-y-2">
                       {battedA.map((batsman, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${
-                            batsman.isOut 
-                              ? 'bg-destructive/5 border-destructive/20' 
-                              : 'bg-primary/5 border-primary/20'
-                          }`}
+                        <div
+                          key={idx}
+                          className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${batsman.isOut
+                            ? 'bg-destructive/5 border-destructive/20'
+                            : 'bg-primary/5 border-primary/20'
+                            }`}
                         >
                           <div>
                             <div className="font-semibold text-foreground">{batsman.name}</div>
@@ -197,13 +198,12 @@ export default function MatchResults({
                   {battedB.length > 0 ? (
                     <div className="space-y-2">
                       {battedB.map((batsman, idx) => (
-                        <div 
-                          key={idx} 
-                          className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${
-                            batsman.isOut 
-                              ? 'bg-destructive/5 border-destructive/20' 
-                              : 'bg-primary/5 border-primary/20'
-                          }`}
+                        <div
+                          key={idx}
+                          className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${batsman.isOut
+                            ? 'bg-destructive/5 border-destructive/20'
+                            : 'bg-primary/5 border-primary/20'
+                            }`}
                         >
                           <div>
                             <div className="font-semibold text-foreground">{batsman.name}</div>
@@ -306,13 +306,47 @@ export default function MatchResults({
             </div>
           </div>
 
-          {/* Action Button */}
-          <div className="flex gap-4 pt-6 border-t border-border">
+          {/* Action Buttons */}
+          <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-border">
+            <Button
+              onClick={onSave}
+              disabled={isSaved}
+              className={`flex-1 py-8 text-lg font-black transition-all duration-500 overflow-hidden relative group ${isSaved
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-xl shadow-secondary/20'
+                }`}
+            >
+              <div className="flex items-center justify-center gap-3">
+                {isSaved ? (
+                  <>
+                    <svg className="w-6 h-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>SAVED TO DATABASE</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>SAVE THIS MATCH</span>
+                  </>
+                )}
+              </div>
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform origin-left transition-transform scale-x-0 group-hover:scale-x-100" />
+            </Button>
+
             <Button
               onClick={onNewMatch}
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-lg py-6"
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 font-black text-lg py-8 shadow-xl shadow-primary/20 relative group overflow-hidden"
             >
-              Start New Match
+              <span className="relative z-10 flex items-center justify-center gap-3">
+                <svg className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                START NEW MATCH
+              </span>
+              <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
             </Button>
           </div>
         </div>
