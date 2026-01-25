@@ -2,6 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import MatchAnalytics from './MatchAnalytics';
 
 interface BatsmanStats {
   name: string;
@@ -39,6 +41,8 @@ interface MatchResultsProps {
   onNewMatch: () => void;
   isSaved?: boolean;
   onSave?: () => void;
+  inning1Timeline?: any[];
+  inning2Timeline?: any[];
 }
 
 export default function MatchResults({
@@ -59,7 +63,9 @@ export default function MatchResults({
   bowlersB,
   onNewMatch,
   isSaved = false,
-  onSave
+  onSave,
+  inning1Timeline = [],
+  inning2Timeline = []
 }: MatchResultsProps) {
   if (!show) return null;
 
@@ -147,164 +153,180 @@ export default function MatchResults({
             </div>
           </div>
 
-          {/* Detailed Statistics */}
-          <div className="space-y-8 pt-4">
-            {/* Batting Statistics */}
-            <div>
-              <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
-                <span>🏏</span> Batting Statistics
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Team A Batting */}
-                <div className="space-y-3">
-                  <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
-                    {teamAName} - Innings
-                  </div>
-                  {battedA.length > 0 ? (
-                    <div className="space-y-2">
-                      {battedA.map((batsman, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${batsman.isOut
-                            ? 'bg-destructive/5 border-destructive/20'
-                            : 'bg-primary/5 border-primary/20'
-                            }`}
-                        >
-                          <div>
-                            <div className="font-semibold text-foreground">{batsman.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {batsman.runs} ({batsman.balls}) • SR: {batsman.balls > 0 ? ((batsman.runs / batsman.balls) * 100).toFixed(1) : '0.0'}
+          {/* Tabbed interface for Stats vs Analytics */}
+          <Tabs defaultValue="scorecard" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-muted/20 border border-border mb-8">
+              <TabsTrigger value="scorecard" className="font-black tracking-widest text-xs uppercase italic py-3">Detailed Scorecard</TabsTrigger>
+              <TabsTrigger value="analytics" className="font-black tracking-widest text-xs uppercase italic py-3 text-secondary">Match Analytics</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="scorecard" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+              <div className="space-y-8">
+                {/* Batting Statistics */}
+                <div>
+                  <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+                    <span>🏏</span> Batting Statistics
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Team A Batting */}
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
+                        {teamAName} - Innings
+                      </div>
+                      {battedA.length > 0 ? (
+                        <div className="space-y-2">
+                          {battedA.map((batsman: BatsmanStats, idx: number) => (
+                            <div
+                              key={idx}
+                              className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${batsman.isOut
+                                  ? 'bg-destructive/5 border-destructive/20'
+                                  : 'bg-primary/5 border-primary/20'
+                                }`}
+                            >
+                              <div>
+                                <div className="font-semibold text-foreground">{batsman.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {batsman.runs} ({batsman.balls}) • SR: {batsman.balls > 0 ? ((batsman.runs / batsman.balls) * 100).toFixed(1) : '0.0'}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-secondary">{batsman.fours}×4s, {batsman.sixes}×6s</div>
+                                <div className={`text-xs font-semibold ${batsman.isOut ? 'text-destructive' : 'text-primary'}`}>
+                                  {batsman.isOut ? 'OUT' : 'NOT OUT'}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs text-secondary">{batsman.fours}×4s, {batsman.sixes}×6s</div>
-                            <div className={`text-xs font-semibold ${batsman.isOut ? 'text-destructive' : 'text-primary'}`}>
-                              {batsman.isOut ? 'OUT' : 'NOT OUT'}
-                            </div>
-                          </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-3">No batting data</div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground p-3">No batting data</div>
-                  )}
+
+                    {/* Team B Batting */}
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
+                        {teamBName} - Innings
+                      </div>
+                      {battedB.length > 0 ? (
+                        <div className="space-y-2">
+                          {battedB.map((batsman: BatsmanStats, idx: number) => (
+                            <div
+                              key={idx}
+                              className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${batsman.isOut
+                                  ? 'bg-destructive/5 border-destructive/20'
+                                  : 'bg-primary/5 border-primary/20'
+                                }`}
+                            >
+                              <div>
+                                <div className="font-semibold text-foreground">{batsman.name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {batsman.runs} ({batsman.balls}) • SR: {batsman.balls > 0 ? ((batsman.runs / batsman.balls) * 100).toFixed(1) : '0.0'}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-secondary">{batsman.fours}×4s, {batsman.sixes}×6s</div>
+                                <div className={`text-xs font-semibold ${batsman.isOut ? 'text-destructive' : 'text-primary'}`}>
+                                  {batsman.isOut ? 'OUT' : 'NOT OUT'}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-3">No batting data</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Team B Batting */}
-                <div className="space-y-3">
-                  <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
-                    {teamBName} - Innings
-                  </div>
-                  {battedB.length > 0 ? (
-                    <div className="space-y-2">
-                      {battedB.map((batsman, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex justify-between items-center p-3 rounded-lg border text-sm transition-all ${batsman.isOut
-                            ? 'bg-destructive/5 border-destructive/20'
-                            : 'bg-primary/5 border-primary/20'
-                            }`}
-                        >
-                          <div>
-                            <div className="font-semibold text-foreground">{batsman.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {batsman.runs} ({batsman.balls}) • SR: {batsman.balls > 0 ? ((batsman.runs / batsman.balls) * 100).toFixed(1) : '0.0'}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs text-secondary">{batsman.fours}×4s, {batsman.sixes}×6s</div>
-                            <div className={`text-xs font-semibold ${batsman.isOut ? 'text-destructive' : 'text-primary'}`}>
-                              {batsman.isOut ? 'OUT' : 'NOT OUT'}
-                            </div>
-                          </div>
+                {/* Bowling Statistics */}
+                <div>
+                  <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+                    <span>🎯</span> Bowling Statistics
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
+                        {teamAName} Bowlers
+                      </div>
+                      {bowledA.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="text-muted-foreground text-xs border-b border-border">
+                                <th className="text-left py-2 px-2">Bowler</th>
+                                <th className="text-center py-2 px-2">O</th>
+                                <th className="text-center py-2 px-2">R</th>
+                                <th className="text-center py-2 px-2">W</th>
+                                <th className="text-center py-2 px-2">Econ</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bowledA.map((bowler: BowlerStats, idx: number) => (
+                                <tr key={idx} className="border-b border-border/50 hover:bg-muted/20">
+                                  <td className="py-2 px-2 font-medium">{bowler.name}</td>
+                                  <td className="text-center py-2 px-2">{formatOvers(bowler)}</td>
+                                  <td className="text-center py-2 px-2">{bowler.runs}</td>
+                                  <td className="text-center py-2 px-2 font-bold text-primary">{bowler.wickets}</td>
+                                  <td className="text-center py-2 px-2 text-secondary">{getEconomy(bowler)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-3">No bowling data</div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground p-3">No batting data</div>
-                  )}
+
+                    <div className="space-y-3">
+                      <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
+                        {teamBName} Bowlers
+                      </div>
+                      {bowledB.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="text-muted-foreground text-xs border-b border-border">
+                                <th className="text-left py-2 px-2">Bowler</th>
+                                <th className="text-center py-2 px-2">O</th>
+                                <th className="text-center py-2 px-2">R</th>
+                                <th className="text-center py-2 px-2">W</th>
+                                <th className="text-center py-2 px-2">Econ</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bowledB.map((bowler: BowlerStats, idx: number) => (
+                                <tr key={idx} className="border-b border-border/50 hover:bg-muted/20">
+                                  <td className="py-2 px-2 font-medium">{bowler.name}</td>
+                                  <td className="text-center py-2 px-2">{formatOvers(bowler)}</td>
+                                  <td className="text-center py-2 px-2">{bowler.runs}</td>
+                                  <td className="text-center py-2 px-2 font-bold text-primary">{bowler.wickets}</td>
+                                  <td className="text-center py-2 px-2 text-secondary">{getEconomy(bowler)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-3">No bowling data</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </TabsContent>
 
-            {/* Bowling Statistics */}
-            <div>
-              <h3 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
-                <span>🎯</span> Bowling Statistics
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Team A Bowling (bowled in 2nd innings) */}
-                <div className="space-y-3">
-                  <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
-                    {teamAName} Bowlers
-                  </div>
-                  {bowledA.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-muted-foreground text-xs border-b border-border">
-                            <th className="text-left py-2 px-2">Bowler</th>
-                            <th className="text-center py-2 px-2">O</th>
-                            <th className="text-center py-2 px-2">R</th>
-                            <th className="text-center py-2 px-2">W</th>
-                            <th className="text-center py-2 px-2">Econ</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bowledA.map((bowler, idx) => (
-                            <tr key={idx} className="border-b border-border/50 hover:bg-muted/20">
-                              <td className="py-2 px-2 font-medium">{bowler.name}</td>
-                              <td className="text-center py-2 px-2">{formatOvers(bowler)}</td>
-                              <td className="text-center py-2 px-2">{bowler.runs}</td>
-                              <td className="text-center py-2 px-2 font-bold text-primary">{bowler.wickets}</td>
-                              <td className="text-center py-2 px-2 text-secondary">{getEconomy(bowler)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground p-3">No bowling data</div>
-                  )}
-                </div>
-
-                {/* Team B Bowling (bowled in 1st innings) */}
-                <div className="space-y-3">
-                  <div className="text-sm font-semibold text-secondary mb-3 border-b border-border pb-2">
-                    {teamBName} Bowlers
-                  </div>
-                  {bowledB.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-muted-foreground text-xs border-b border-border">
-                            <th className="text-left py-2 px-2">Bowler</th>
-                            <th className="text-center py-2 px-2">O</th>
-                            <th className="text-center py-2 px-2">R</th>
-                            <th className="text-center py-2 px-2">W</th>
-                            <th className="text-center py-2 px-2">Econ</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bowledB.map((bowler, idx) => (
-                            <tr key={idx} className="border-b border-border/50 hover:bg-muted/20">
-                              <td className="py-2 px-2 font-medium">{bowler.name}</td>
-                              <td className="text-center py-2 px-2">{formatOvers(bowler)}</td>
-                              <td className="text-center py-2 px-2">{bowler.runs}</td>
-                              <td className="text-center py-2 px-2 font-bold text-primary">{bowler.wickets}</td>
-                              <td className="text-center py-2 px-2 text-secondary">{getEconomy(bowler)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground p-3">No bowling data</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+            <TabsContent value="analytics" className="animate-in fade-in slide-in-from-right-4">
+              <MatchAnalytics
+                inning1Timeline={inning1Timeline}
+                inning2Timeline={inning2Timeline}
+                teamAName={teamAName}
+                teamBName={teamBName}
+              />
+            </TabsContent>
+          </Tabs>
 
           {/* Action Buttons */}
           <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-border">
@@ -312,8 +334,8 @@ export default function MatchResults({
               onClick={onSave}
               disabled={isSaved}
               className={`flex-1 py-8 text-lg font-black transition-all duration-500 overflow-hidden relative group ${isSaved
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-xl shadow-secondary/20'
+                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-xl shadow-secondary/20'
                 }`}
             >
               <div className="flex items-center justify-center gap-3">

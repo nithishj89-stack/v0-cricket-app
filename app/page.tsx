@@ -14,6 +14,7 @@ import BowlerSelectionModal from '@/components/cricket/BowlerSelectionModal';
 import MatchResults from '@/components/cricket/MatchResults';
 import WicketAnimation from '@/components/cricket/WicketAnimation';
 import BoundaryAnimation from '@/components/cricket/BoundaryAnimation';
+import CommentaryPanel from '@/components/cricket/CommentaryPanel';
 import UserHeader from '@/components/UserHeader';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
@@ -63,6 +64,22 @@ interface InningData {
   target?: number;
 }
 
+interface BallRecord {
+  over: number;
+  ball: number;
+  totalScore: number;
+  totalWickets: number;
+  runs: number;
+  isExtra: boolean;
+  isWicket: boolean;
+  isBoundary: boolean;
+  batsmanName: string;
+  bowlerName: string;
+  commentary: string;
+  team: 'A' | 'B';
+  inning: number;
+}
+
 interface MatchState {
   matchStarted: boolean;
   currentInning: number;
@@ -92,6 +109,8 @@ interface MatchState {
   winner: string | null;
   manOfMatch: string | null;
   tournamentId?: string;
+  inning1Timeline: BallRecord[];
+  inning2Timeline: BallRecord[];
 }
 
 export default function Home() {
@@ -160,7 +179,9 @@ export default function Home() {
     wicketAnimation: false,
     winner: null,
     manOfMatch: null,
-    tournamentId: undefined
+    tournamentId: undefined,
+    inning1Timeline: [],
+    inning2Timeline: []
   });
 
   const [lastMatchState, setLastMatchState] = useState<MatchState | null>(null);
@@ -186,6 +207,28 @@ export default function Home() {
     const overs = Math.floor(balls / 6);
     const remainingBalls = balls % 6;
     return `${overs}.${remainingBalls}`;
+  };
+
+  const generateCommentaryText = (bowler: string, batsman: string, runs: number, isWicket: boolean, isExtra: boolean, isBoundary: boolean) => {
+    if (isWicket) {
+      const phrases = [
+        "OUT! The finger goes up! What a delivery!",
+        "WICKET! High in the air and safely taken!",
+        "OUT! Bowled him! The off-stump is cartwheeling!",
+        "WICKET! Trapped in front, that looked plumb!"
+      ];
+      return `${bowler} to ${batsman}, ${phrases[Math.floor(Math.random() * phrases.length)]}`;
+    }
+    if (isExtra) return `${bowler} to ${batsman}, Wide ball! Strayed outside the line.`;
+
+    if (isBoundary) {
+      if (runs === 6) return `${bowler} to ${batsman}, SIX! Absolute monster! That's into the stands.`;
+      if (runs === 4) return `${bowler} to ${batsman}, FOUR! Pierces the gap beautifully!`;
+    }
+
+    if (runs === 0) return `${bowler} to ${batsman}, no run. Solid defense.`;
+    if (runs === 1) return `${bowler} to ${batsman}, 1 run. Dabs it into the gap for a single.`;
+    return `${bowler} to ${batsman}, ${runs} runs. Hard running between the wickets.`;
   };
 
   // Save match to Firestore when match ends
@@ -434,6 +477,29 @@ export default function Home() {
         }
       }
 
+      // Record this ball in the timeline
+      const ballRecord: BallRecord = {
+        over: Math.floor(newMatch.balls / 6),
+        ball: newMatch.balls % 6 === 0 && !isExtra ? 6 : newMatch.balls % 6,
+        totalScore: newMatch.runs,
+        totalWickets: newMatch.wickets,
+        runs: runsByBall,
+        isExtra,
+        isWicket: false,
+        isBoundary,
+        batsmanName: striker.name,
+        bowlerName: currentBowler.name,
+        commentary: generateCommentaryText(currentBowler.name, striker.name, runsByBall, false, isExtra, isBoundary),
+        team: newMatch.currentTeam,
+        inning: newMatch.currentInning
+      };
+
+      if (newMatch.currentInning === 1) {
+        newMatch.inning1Timeline = [...(newMatch.inning1Timeline || []), ballRecord];
+      } else {
+        newMatch.inning2Timeline = [...(newMatch.inning2Timeline || []), ballRecord];
+      }
+
       // Update batsmen arrays
       if (newMatch.currentTeam === 'A') {
         newMatch.allBatsmenA = allBatsmen;
@@ -573,6 +639,29 @@ export default function Home() {
         currentBowler.balls += 1;
         newMatch.balls += 1;
         striker.balls += 1;
+
+        // Record this ball in the timeline
+        const ballRecord: BallRecord = {
+          over: Math.floor((newMatch.balls - 1) / 6),
+          ball: (newMatch.balls - 1) % 6 + 1,
+          totalScore: newMatch.runs,
+          totalWickets: newMatch.wickets,
+          runs: 0,
+          isExtra: false,
+          isWicket: true,
+          isBoundary: false,
+          batsmanName: striker.name,
+          bowlerName: currentBowler.name,
+          commentary: generateCommentaryText(currentBowler.name, striker.name, 0, true, false, false),
+          team: newMatch.currentTeam,
+          inning: newMatch.currentInning
+        };
+
+        if (newMatch.currentInning === 1) {
+          newMatch.inning1Timeline = [...(newMatch.inning1Timeline || []), ballRecord];
+        } else {
+          newMatch.inning2Timeline = [...(newMatch.inning2Timeline || []), ballRecord];
+        }
 
         // Check if over completed
         if (currentBowler.balls === 6) {
@@ -930,10 +1019,19 @@ export default function Home() {
           isMatchEnded={match.isMatchEnded}
         />
 
-        {/* Team Contributions */}
-        <TeamContributions match={{
-          ...match
-        }} />
+        {/* Stats and Commentary Section */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <TeamContributions match={{
+              ...match
+            }} />
+          </div>
+          <div className="lg:col-span-1">
+            <CommentaryPanel
+              timeline={match.currentInning === 1 ? (match.inning1Timeline || []) : (match.inning2Timeline || [])}
+            />
+          </div>
+        </div>
       </div>
     </main>
   );

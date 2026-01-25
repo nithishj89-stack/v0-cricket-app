@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -8,7 +8,9 @@ import Scoreboard from '@/components/cricket/Scoreboard';
 import BatsmenSection from '@/components/cricket/BatsmenSection';
 import BowlerSection from '@/components/cricket/BowlerSection';
 import TeamContributions from '@/components/cricket/TeamContributions';
+import CommentaryPanel from '@/components/cricket/CommentaryPanel';
 import Link from 'next/link';
+import BoundaryAnimation from '@/components/cricket/BoundaryAnimation';
 
 export default function LivePage() {
     const params = useParams();
@@ -98,8 +100,45 @@ export default function LivePage() {
     const bowlers = match.currentTeam === 'A' ? match.allBowlersB : match.allBowlersA;
     const currentBowler = bowlers[match.currentBowlerIndex] || null;
 
+    // --- Boundary Animation Logic ---
+    const [animationType, setAnimationType] = useState<'four' | 'six' | null>(null);
+    const lastProcessedBallRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!match) return;
+
+        const currentTimeline = match.currentInning === 1 ? (match.inning1Timeline || []) : (match.inning2Timeline || []);
+
+        if (currentTimeline.length > 0) {
+            const lastBall = currentTimeline[currentTimeline.length - 1];
+            // Create a unique ID for the ball to avoid duplicate animations
+            const ballId = `${match.currentInning}-${lastBall.over}-${lastBall.ball}`;
+
+            // Only process if valid boundary and hasn't been processed yet
+            if (lastBall.isBoundary && ballId !== lastProcessedBallRef.current) {
+                // Check if it's a 4 or 6
+                if (lastBall.runs === 4) {
+                    setAnimationType('four');
+                } else if (lastBall.runs === 6) {
+                    setAnimationType('six');
+                }
+
+                // Mark as processed immediately so we don't trigger again
+                lastProcessedBallRef.current = ballId;
+            } else if (!lastBall.isBoundary) {
+                // Update ref even if not boundary, to keep track of latest
+                lastProcessedBallRef.current = ballId;
+            }
+        }
+    }, [match]);
+    // -------------------------------
+
     return (
         <main className="min-h-screen bg-background py-6 px-4">
+            <BoundaryAnimation
+                type={animationType}
+                onComplete={() => setAnimationType(null)}
+            />
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header Info */}
                 <div className="bg-card rounded-xl p-6 border border-border flex justify-between items-center">
@@ -167,8 +206,17 @@ export default function LivePage() {
                     )}
                 </div>
 
-                {/* Team Contributions */}
-                <TeamContributions match={match} />
+                {/* Stats and Commentary Section */}
+                <div className="grid lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                        <TeamContributions match={match} />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <CommentaryPanel
+                            timeline={match.currentInning === 1 ? (match.inning1Timeline || []) : (match.inning2Timeline || [])}
+                        />
+                    </div>
+                </div>
 
                 <div className="text-center pt-8">
                     <p className="text-xs text-muted-foreground">Powered by CricScorer</p>

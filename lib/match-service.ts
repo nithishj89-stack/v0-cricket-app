@@ -32,6 +32,8 @@ export interface SavedMatch {
     batsmenB: any[];
     bowlersA: any[];
     bowlersB: any[];
+    inning1Timeline?: any[];
+    inning2Timeline?: any[];
     createdAt: Timestamp;
 }
 
@@ -54,6 +56,8 @@ export interface MatchData {
     batsmenB: any[];
     bowlersA: any[];
     bowlersB: any[];
+    inning1Timeline?: any[];
+    inning2Timeline?: any[];
 }
 
 // Save a completed match to Firestore
