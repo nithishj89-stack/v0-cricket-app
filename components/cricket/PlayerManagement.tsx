@@ -89,9 +89,25 @@ export default function PlayerManagement({ teamA, teamB, currentOvers, onStart }
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
         <div className="p-6 space-y-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-primary mb-2">Match Setup</h2>
-            <p className="text-muted-foreground">Setup your teams to begin the game</p>
+          <div className="text-center space-y-4 py-4 relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/20 blur-[100px] rounded-full -z-10" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-card border border-primary/20 mb-2 float-animation shadow-lg shadow-primary/10">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                <path d="M2 12h20" />
+              </svg>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black welcome-text leading-tight drop-shadow-2xl">
+              Welcome to the <br />Cricket World
+            </h1>
+            <div className="flex flex-col items-center gap-2">
+              <h2 className="text-xl font-bold text-muted-foreground/80 tracking-wide uppercase italic">NJ.cric-scorer v2.0</h2>
+              <div className="w-12 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full" />
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto font-medium">
+                Experience professional-grade live match scoring, custom squad management, and real-time broadcasting.
+              </p>
+            </div>
           </div>
 
           {showSavedTeams ? (
