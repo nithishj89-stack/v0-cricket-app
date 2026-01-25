@@ -15,6 +15,7 @@ export default function LivePage() {
     const userId = params.userId as string;
     const [match, setMatch] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!userId) return;
@@ -24,13 +25,20 @@ export default function LivePage() {
         // Subscribe to live updates
         const unsubscribe = onSnapshot(liveMatchRef, (doc) => {
             if (doc.exists()) {
+                console.log("📝 Live data received:", doc.data());
                 setMatch(doc.data());
             } else {
+                console.warn("⚠️ Match document does not exist in Firestore for ID:", userId);
                 setMatch(null);
             }
             setLoading(false);
-        }, (error) => {
-            console.error("Live subscription error:", error);
+        }, (error: any) => {
+            console.error("❌ Live subscription error:", error);
+            if (error.code === 'permission-denied') {
+                setError('PERMISSION_DENIED');
+            } else {
+                setError('UNKNOWN_ERROR');
+            }
             setLoading(false);
         });
 
@@ -43,6 +51,25 @@ export default function LivePage() {
         </div>
     );
 
+    if (error === 'PERMISSION_DENIED') return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+            <div className="inline-block p-6 rounded-full bg-destructive/10 mb-4 text-destructive">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground mb-6 text-center max-w-sm">
+                We couldn't connect to the live match. Please ask the scorer to check their <strong>Firebase Security Rules</strong>.
+            </p>
+            <Link href="/">
+                <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold">
+                    Learn More
+                </button>
+            </Link>
+        </div>
+    );
+
     if (!match) return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
             <div className="inline-block p-6 rounded-full bg-muted mb-4">
@@ -51,9 +78,9 @@ export default function LivePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
             </div>
-            <h2 className="text-2xl font-bold mb-2">No Live Match Found</h2>
+            <h2 className="text-2xl font-bold mb-2">Match Not Found</h2>
             <p className="text-muted-foreground mb-6 text-center max-w-sm">
-                This match may have ended or the link is incorrect.
+                There is no live match currently broadcasting from this link. Make sure the scorer has started the match and is logged in.
             </p>
             <Link href="/">
                 <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold">

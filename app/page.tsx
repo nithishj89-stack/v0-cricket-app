@@ -166,6 +166,7 @@ export default function Home() {
   const [lastMatchState, setLastMatchState] = useState<MatchState | null>(null);
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'failed' | 'idle'>('idle');
 
 
   const saveHistory = useCallback(() => {
@@ -241,9 +242,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!match.matchStarted || !user) return;
+    if (!match.matchStarted || !user) {
+      setSyncStatus('idle');
+      return;
+    }
 
     const syncLiveMatch = async () => {
+      setSyncStatus('syncing');
       try {
         const liveMatchRef = doc(db, 'live_matches', user.uid);
         await setDoc(liveMatchRef, {
@@ -253,14 +258,18 @@ export default function Home() {
           userId: user.uid,
           updatedAt: serverTimestamp()
         });
+        setSyncStatus('synced');
       } catch (err) {
         console.error('Failed to sync live match:', err);
+        setSyncStatus('failed');
       }
     };
 
-    const timeout = setTimeout(syncLiveMatch, 1000);
+    // Debounce: wait for 500ms after the last score update before syncing
+    const timeout = setTimeout(syncLiveMatch, 500);
     return () => clearTimeout(timeout);
-  }, [match, user, currentDate, currentTime]);
+  }, [match, user]); // Only sync when the actual match data changes, NOT every second for the clock
+
 
 
   // No longer auto-deleting live matches so friends can see final scorecard
@@ -838,17 +847,30 @@ export default function Home() {
         </div>
 
         {/* Scoreboard */}
-        <Scoreboard
-          match={{
-            ...match,
-            currentDate,
-            currentTime,
-            chasingMode: match.currentInning === 2,
-            userId: user?.uid
-          }}
-          currentTeam={match.currentTeam === 'A' ? match.teamA.name : match.teamB.name}
-          currentTeamLogo=""
-        />
+        <div className="relative">
+          <div className="absolute -top-3 right-4 z-10">
+            {syncStatus === 'syncing' && (
+              <span className="bg-blue-500/20 text-blue-400 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">Syncing...</span>
+            )}
+            {syncStatus === 'synced' && (
+              <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full font-bold">✓ Live Synced</span>
+            )}
+            {syncStatus === 'failed' && (
+              <span className="bg-red-500/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-bold">❌ Sync Failed</span>
+            )}
+          </div>
+          <Scoreboard
+            match={{
+              ...match,
+              currentDate,
+              currentTime,
+              chasingMode: match.currentInning === 2,
+              userId: user?.uid
+            }}
+            currentTeam={match.currentTeam === 'A' ? match.teamA.name : match.teamB.name}
+            currentTeamLogo=""
+          />
+        </div>
 
         {/* Batsmen and Bowler Sections */}
         <div className="grid lg:grid-cols-2 gap-6">

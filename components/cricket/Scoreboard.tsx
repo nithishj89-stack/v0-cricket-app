@@ -85,6 +85,14 @@ export default function Scoreboard({ match, currentTeam, currentTeamLogo }: Scor
                 SHARE LIVE
               </button>
             )}
+            {!match.isMatchEnded && !match.userId && (
+              <div className="flex items-center gap-1.5 text-[10px] font-black text-orange-400 bg-orange-400/10 px-3 py-1 rounded-full border border-orange-400/20">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                LOGIN TO SHARE LIVE
+              </div>
+            )}
           </div>
           <p className={`text-sm font-semibold ${match.isMatchEnded ? 'text-destructive' : 'text-primary'}`}>
             {match.isMatchEnded ? '✓ MATCH ENDED' : '🟢 LIVE'}
