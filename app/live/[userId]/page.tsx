@@ -75,16 +75,34 @@ export default function LivePage() {
         <main className="min-h-screen bg-background py-6 px-4">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header Info */}
+                <div className="bg-card rounded-lg p-6 border border-border">
+                    <div className="flex justify-between items-center mb-4">
+                        <h1 className="text-4xl font-bold text-primary">NJ.cric-scorer</h1>
+                        <div className="text-right">
+                            <p className="text-sm text-muted-foreground">{match.currentDate}</p>
+                            <p className="text-lg font-semibold text-primary">{match.currentTime}</p>
+                            <p className={`text-sm mt-1 font-bold ${match.isMatchEnded ? 'text-destructive' : 'text-primary'}`}>
+                                {match.isMatchEnded ? '✓ FINISHED' : '🟢 LIVE'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                         <span className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            <span className={`${!match.isMatchEnded && 'animate-ping'} absolute inline-flex h-full w-full rounded-full ${match.isMatchEnded ? 'bg-gray-400' : 'bg-red-400'} opacity-75`}></span>
+                            <span className={`relative inline-flex rounded-full h-3 w-3 ${match.isMatchEnded ? 'bg-gray-500' : 'bg-red-500'}`}></span>
                         </span>
-                        <span className="text-sm font-bold text-red-500 uppercase tracking-widest">Live Now</span>
+                        <span className={`text-sm font-bold uppercase tracking-widest ${match.isMatchEnded ? 'text-muted-foreground' : 'text-red-500'}`}>
+                            {match.isMatchEnded ? 'Results' : 'Live Now'}
+                        </span>
                     </div>
                     <div className="text-lg font-bold text-primary">
-                        {match.currentTeam === 'A' ? match.teamA.name : match.teamB.name} Batting
+                        {match.isMatchEnded
+                            ? `${match.winner} Won the Match!`
+                            : `${match.currentTeam === 'A' ? match.teamA.name : match.teamB.name} Batting | Inning ${match.currentInning}`
+                        }
                     </div>
                     {match.currentInning === 2 && (
                         <div className="text-sm font-semibold text-secondary">

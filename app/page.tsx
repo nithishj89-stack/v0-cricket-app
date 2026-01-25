@@ -82,8 +82,6 @@ interface MatchState {
   currentBowlerIndex: number;
   target: number;
   isMatchEnded: boolean;
-  currentDate: string;
-  currentTime: string;
   totalOvers: number;
   showBowlerSelection: boolean;
   showPlayerManagement: boolean;
@@ -153,8 +151,6 @@ export default function Home() {
     currentBowlerIndex: 0,
     target: 0,
     isMatchEnded: false,
-    currentDate: '',
-    currentTime: '',
     totalOvers: 2,
     showBowlerSelection: false,
     showPlayerManagement: true,
@@ -168,6 +164,9 @@ export default function Home() {
   });
 
   const [lastMatchState, setLastMatchState] = useState<MatchState | null>(null);
+  const [currentDate, setCurrentDate] = useState('');
+  const [currentTime, setCurrentTime] = useState('');
+
 
   const saveHistory = useCallback(() => {
     setLastMatchState(JSON.parse(JSON.stringify(match)));
@@ -194,8 +193,8 @@ export default function Home() {
       if (match.isMatchEnded && user && !matchSaved && match.inning1 && match.inning2) {
         try {
           const matchId = await saveMatch(user.uid, {
-            date: match.currentDate,
-            time: match.currentTime,
+            date: currentDate,
+            time: currentTime,
             teamAName: match.teamA.name,
             teamBName: match.teamB.name,
             teamAScore: match.inning1.score,
@@ -232,11 +231,8 @@ export default function Home() {
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-      setMatch(prev => ({
-        ...prev,
-        currentDate: now.toLocaleDateString(),
-        currentTime: now.toLocaleTimeString()
-      }));
+      setCurrentDate(now.toLocaleDateString());
+      setCurrentTime(now.toLocaleTimeString());
     };
 
     updateDateTime();
@@ -244,15 +240,16 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Sync Live Match to Firestore
   useEffect(() => {
-    if (!match.matchStarted || match.isMatchEnded || !user) return;
+    if (!match.matchStarted || !user) return;
 
     const syncLiveMatch = async () => {
       try {
         const liveMatchRef = doc(db, 'live_matches', user.uid);
         await setDoc(liveMatchRef, {
           ...match,
+          currentDate,
+          currentTime,
           userId: user.uid,
           updatedAt: serverTimestamp()
         });
@@ -261,23 +258,18 @@ export default function Home() {
       }
     };
 
-    const timeout = setTimeout(syncLiveMatch, 2000); // 2s throttle
+    const timeout = setTimeout(syncLiveMatch, 1000);
     return () => clearTimeout(timeout);
-  }, [match, user]);
+  }, [match, user, currentDate, currentTime]);
 
-  // Cleanup Live Match on End
+
+  // No longer auto-deleting live matches so friends can see final scorecard
   useEffect(() => {
     if (match.isMatchEnded && user) {
-      const cleanup = async () => {
-        try {
-          await deleteDoc(doc(db, 'live_matches', user.uid));
-        } catch (err) {
-          console.error('Cleanup failed:', err);
-        }
-      };
-      cleanup();
+      console.log('Match ended. Live link will remain active with final results.');
     }
   }, [match.isMatchEnded, user]);
+
 
   const handleStartMatch = (teamA: Team, teamB: Team, tournamentId?: string) => {
     // Initialize all batsmen for both teams
@@ -833,7 +825,7 @@ export default function Home() {
         {/* Header Info */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="text-sm text-muted-foreground">
-            Inning {match.currentInning} | {match.currentDate} {match.currentTime}
+            Inning {match.currentInning} | {currentDate} {currentTime}
           </div>
           <div className="text-lg font-bold text-primary">
             {match.currentTeam === 'A' ? match.teamA.name : match.teamB.name} Batting
@@ -849,6 +841,8 @@ export default function Home() {
         <Scoreboard
           match={{
             ...match,
+            currentDate,
+            currentTime,
             chasingMode: match.currentInning === 2,
             userId: user?.uid
           }}
