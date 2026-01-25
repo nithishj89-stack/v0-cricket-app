@@ -117,6 +117,23 @@ export default function ControlPanel({
         </div>
       </div>
 
+      {/* Penalty Runs */}
+      <div className="bg-card rounded-lg p-6 border border-border border-yellow-500/20 bg-yellow-500/5">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-xl font-bold text-yellow-500">Penalty Runs</h2>
+          <span className="text-[10px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-black">OFFICIAL RULE</span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4 italic">Use this ONLY for official penalties (e.g. ball hitting helmet, fielders' misconduct). Does NOT count as a legal ball.</p>
+        <Button
+          onClick={() => handleScoreClick(5, true)}
+          disabled={isMatchEnded}
+          className="w-full bg-yellow-600 text-white hover:bg-yellow-700 font-black py-8 text-2xl shadow-lg border-2 border-yellow-400 group relative overflow-hidden"
+        >
+          <span className="relative z-10 text-shadow">+5 PENALTY</span>
+          <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform" />
+        </Button>
+      </div>
+
       {/* Main Controls */}
       <div className="grid md:grid-cols-3 gap-3">
         <Button

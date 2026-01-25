@@ -377,8 +377,8 @@ export default function Home() {
 
       // For extras (wide/no ball): add run to team, bowler concedes, NO legal ball counted
       if (isExtra) {
-        newMatch.runs += 1; // 1 run for wide/no ball
-        currentBowler.runs += 1;
+        newMatch.runs += runsByBall;
+        currentBowler.runs += runsByBall;
         // Ball is NOT legal - batsman doesn't face it, bowler must bowl again
         // No ball count update, no batsman ball count update
       } else {
