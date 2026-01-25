@@ -232,7 +232,7 @@ export default function Home() {
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-      setCurrentDate(now.toLocaleDateString());
+      setCurrentDate(now.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }));
       setCurrentTime(now.toLocaleTimeString());
     };
 
