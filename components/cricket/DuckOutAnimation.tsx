@@ -19,6 +19,8 @@ export default function DuckOutAnimation({ playerName, show, onComplete }: DuckO
         onComplete?.();
       }, 4000);
       return () => clearTimeout(timer);
+    } else {
+      setIsVisible(false);
     }
   }, [show, onComplete]);
 
