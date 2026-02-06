@@ -178,28 +178,28 @@ export default function DuckOutAnimation({ playerName, show, onComplete }: DuckO
         }
 
         .duck-body {
-          animation: duckBobble 0.5s ease-in-out infinite;
+          animation: duckBobble 0.5s ease-in-out 8 forwards;
         }
 
         .bat-drag {
-          animation: batDrag 0.3s ease-in-out infinite;
+          animation: batDrag 0.3s ease-in-out 13.33 forwards;
           transform-origin: left center;
         }
 
         .tear-drop {
-          animation: tearFall 1s ease-in-out infinite;
+          animation: tearFall 1s ease-in-out 4 forwards;
         }
 
         .rain-drop-1 {
-          animation: rainDrop 0.8s ease-in infinite;
+          animation: rainDrop 0.8s ease-in 5 forwards;
         }
 
         .rain-drop-2 {
-          animation: rainDrop 0.8s ease-in infinite 0.2s;
+          animation: rainDrop 0.8s ease-in 5 forwards 0.2s;
         }
 
         .rain-drop-3 {
-          animation: rainDrop 0.8s ease-in infinite 0.4s;
+          animation: rainDrop 0.8s ease-in 5 forwards 0.4s;
         }
 
         .duck-text {
